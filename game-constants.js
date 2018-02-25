@@ -40,7 +40,7 @@ module.exports = {
         bomp: 1,
         explosion: 10
     },
-    explosionRadius: 150,
+    explosionRadius: 200,
     explosionDamage: 6,
     playerExpireMillis: 15000,
     frameDelay: 30,
