@@ -1,0 +1,33 @@
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: rgb(177, 160, 240);
+        }
+
+        h1,
+        h3,
+        h5 {
+            font-family: monospace;
+            text-align: center;
+        }
+    </style>
+    <title>BOMBAH MEN! :D:D:D:D</title>
+</head>
+
+<body>
+    <h1>BOMBAH MEN! :D:D:D:D</h1>
+    <h3>Enter your name (blank = random name):</h3>
+    <h3><input id="name" /></h3>
+    <h3><button onclick="redirect()">Join the game!</button></h3>
+    <script>
+        const redirect = () => {
+            let name = document.getElementById('name').value;
+            name = name.trim() ? '?name=' + name.trim() : '';
+            window.location.href = `./game.html${name}`;
+        };
+    </script>
+</body>
+
+</html>
