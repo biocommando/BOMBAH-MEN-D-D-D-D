@@ -12,14 +12,14 @@ const actions = [
 ];
 
 const randomAction = () => actions[Math.trunc(actions.length * Math.random())];
-const uniqueId = '';
+const sessionId = '';
 let action = randomAction();
 
 const act = () => {
     if (action === consts.updateTypes.interaction.dropBomb || Math.random() > 0.9) {
         action = randomAction();
     }
-    const update = {uniqueId, type: action, };
+    const update = {sessionId, type: action, };
     request({url: 'http://localhost:3001/update', method: 'POST', json: true, body: update}, (err, res, body) => {
 
     })

@@ -29,8 +29,9 @@ module.exports = {
         },
         // internal
         events: {
-            createPlayer: 'create-player',
-            createBomb: 'create-bomb'
+            createObject: 'create-object',
+            deleteObject: 'delete-object',
+            playerKilled: 'player-killed'
         }
     },
     playerSpeed: 6,

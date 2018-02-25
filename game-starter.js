@@ -1,34 +1,44 @@
 const objCreator = require('./object-creator');
 const consts = require('./game-constants');
+const idPool = require('./id-pool');
+const randomName = require('./random-name');
 
 module.exports = {
-    start: state => startForNewPlayer(state)
+    start: (state, name, oldSessionId) => startForNewPlayer(state, name, oldSessionId)
 }
-
-const startForNewPlayer = state => {
+const playerIdPool = idPool.create();
+const startForNewPlayer = (state, name, oldSessionId) => {
+    name = name ? name : randomName.get();
     const player = {
-        uniqueId: uniqueIdGen(16),
-        globalId: uniqueIdGen(5),
+        sessionId: sessionIdGenerator(16),
+        publicId: playerIdPool.nextId(),
         created: Date.now(),
         expires: Date.now() + consts.playerExpireMillis,
-        score: 0
+        score: {
+            kills: 0
+        },
+        name
     };
     state.players.push(player);
+    state.players = state.players.filter(plr => plr.sessionId !== oldSessionId);
     state.updates.push({
-        type: consts.updateTypes.events.createPlayer,
-        globalId: player.globalId,
-        frameIndex: state.frameIndex});
+        type: consts.updateTypes.events.createObject,
+        objectType: consts.objectTypes.player,
+        publicId: player.publicId,
+        name
+    });
     return player;
 };
 
-const uniqueIdGen = (complexity) => {
+const sessionIdGenerator = (complexity) => {
     const ids = [];
-    const randomId = () => Array(complexity).fill().map(() => String.fromCharCode(65 + Math.trunc(26 * Math.random()))).join('');
+    const randomId = () =>
+        Array(complexity).fill().map(() => String.fromCharCode(65 + Math.trunc(26 * Math.random()))).join('');
     const generate = () => {
         var id;
         do {
             id = randomId();
-        } while(ids.some(i => i == id));
+        } while (ids.some(i => i == id));
         ids.push(id);
         return id;
     };

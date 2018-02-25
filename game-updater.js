@@ -4,10 +4,20 @@ module.exports = {
     update: (state) => updateGame(state)
 }
 let frameIndex = 0;
-const framesToPersist = 200;
-let frames = [{ objects: [], frameIndex: 0 }];
+const frames = {
+    current: [],
+    history: [],
+    update: function (objects) {
+        this.history = this.current;
+        this.current = objects;
+    }
+}
 
-const gameRules = (objects, updates) => {
+/** The game rules.
+ * The rules update the object array according to the update events and then the new state is
+ * calculated based on the updated state. All additions and removals of objects should be
+ * completely event based. */
+const gameRules = (objects, notifyUpdates, updates) => {
     let nextObjects = deepCopy(objects);
     // Handle updates
     updates && updates.forEach(update => {
@@ -18,13 +28,15 @@ const gameRules = (objects, updates) => {
             }
         };
 
-        if (update.type === consts.updateTypes.events.createPlayer) {
-            const xy = randomPosition();
-            const y = (consts.playArea.height - 50) * Math.random() + 25;
-            nextObjects.push(objCreator.create(consts.objectTypes.player, xy.x, xy.y, update.globalId));
-        } else if (update.type === consts.updateTypes.events.createBomb) {
-            const xy = randomPosition();
-            nextObjects.push(objCreator.create(consts.objectTypes.bomb, xy.x, xy.y));
+        if (update.type === consts.updateTypes.events.createObject) {
+            console.log(update);
+            const xy = update.xy ? update.xy : randomPosition();
+            const object = objCreator.create(update.objectType, xy.x, xy.y, update.publicId);
+            object.name = update.name;
+            nextObjects.push(object);
+        } else if (update.type === consts.updateTypes.events.deleteObject) {
+            console.log(update);
+            nextObjects = nextObjects.filter(object => object.id !== update.id);
         } else {
             const playerObject = nextObjects.find(obj => obj.id === update.playerId);
             if (!playerObject) {
@@ -54,7 +66,12 @@ const gameRules = (objects, updates) => {
                 case consts.updateTypes.interaction.dropBomb:
                     if (playerObject.reload <= 0) {
                         playerObject.reload = consts.playerReload;
-                        nextObjects.push(objCreator.create(consts.objectTypes.bomb, playerObject.x, playerObject.y, playerObject.globalId));
+                        notifyUpdates.push({
+                            type: consts.updateTypes.events.createObject,
+                            objectType: consts.objectTypes.bomb,
+                            publicId: playerObject.id,
+                            xy: { x: playerObject.x, y: playerObject.y }
+                        });
                     }
                     break;
                 default:
@@ -65,8 +82,10 @@ const gameRules = (objects, updates) => {
     });
     // Move objects etc.
     nextObjects.forEach(object => {
-        const insideBox = (x1, y1, x2, y2) => object.x >= x1 && object.x <= x2 && object.y >= y1 && object.y <= y2;
-        const insideCircle = (obj, x, y, r) => (obj.x - x) * (obj.x - x) + (obj.y - y) * (obj.y - y) <= r * r;
+        const insideBox = (x1, y1, x2, y2) =>
+            object.x >= x1 && object.x <= x2 && object.y >= y1 && object.y <= y2;
+        const insideCircle = (obj, x, y, r) =>
+            (obj.x - x) * (obj.x - x) + (obj.y - y) * (obj.y - y) <= r * r;
 
         // Move objects
         const ex = object.x;
@@ -84,13 +103,27 @@ const gameRules = (objects, updates) => {
         // Type specific actions
         if (object.type === consts.objectTypes.bomb) {
             if (object.hitpoints <= 0) {
-                nextObjects.push(objCreator.create(consts.objectTypes.explosion, object.x, object.y, object.owner));
+                notifyUpdates.push({
+                    type: consts.updateTypes.events.createObject,
+                    objectType: consts.objectTypes.explosion,
+                    publicId: object.owner,
+                    xy: { x: object.x, y: object.y }
+                });
             }
         } else if (object.type === consts.objectTypes.explosion) {
             nextObjects
-                .filter(o => o.type === consts.objectTypes.player && insideCircle(o, object.x, object.y, object.radius))
+                .filter(o => o.type === consts.objectTypes.player
+                    && insideCircle(o, object.x, object.y, object.radius))
                 .forEach(o => {
                     o.hitpoints -= object.damage;
+                    if (o.hitpoints < 0) {
+                        notifyUpdates.push({
+                            type: consts.updateTypes.events.playerKilled,
+                            killedBy: object.owner,
+                            killed: o.id,
+                            backwardsUpdate: true
+                        });
+                    }
                 });
         } else if (object.type === consts.objectTypes.player) {
             if (object.reload > 0) {
@@ -102,57 +135,36 @@ const gameRules = (objects, updates) => {
         }
     });
     // Remove objects with hitpoints reduced to zero or less
-    nextObjects = nextObjects.filter(o => o.hitpoints > 0);
+    nextObjects
+        .filter(o => o.hitpoints <= 0)
+        .forEach(o => notifyUpdates.push({ type: consts.updateTypes.events.deleteObject, id: o.id }));
 
     return nextObjects;
 };
-let nextRandomBombDrop = Date.now() + 10000;
+
 const updateGame = (state) => {
-    // Every 10 seconds there will be 4 randomly placed bombs
-    if (Date.now() > nextRandomBombDrop) {
-        nextRandomBombDrop = Date.now() + 10000;
-        for(var i = 0; i < 4; i++) {
-            state.updates.push({type: consts.updateTypes.events.createBomb, frameIndex});
-        }
+    const notifyUpdates = [];
+    if (state.updates.length > 0) {
+        const sorter = (a, b) => a.order === undefined || b.order === undefined ? 0 : a.order - b.order;
+        const sortedUpdates = state.updates.sort(sorter);
+        frames.current = gameRules(frames.history, notifyUpdates, sortedUpdates);
+        // History will be overridden after this
     }
-    frameIndex++;
-    const sortedUpdates = state.updates
-        .filter(update => update.frameIndex >= frameIndex - framesToPersist)
-        .sort((a, b) => a.frameIndex - b.frameIndex);
-    if (sortedUpdates.length > 0) {
-        const updatesPerFrame = {};
-        sortedUpdates.forEach(update => {
-            if (updatesPerFrame[update.frameIndex] === undefined) {
-                updatesPerFrame[update.frameIndex] = [];
+
+    [state.updates, notifyUpdates].forEach(updates =>
+        updates.filter(update => update.type === consts.updateTypes.events.playerKilled)
+        .forEach(killedUpdate => {
+            console.log(killedUpdate);
+            const killer = state.players.find(player => player.publicId === killedUpdate.killedBy);
+            if (killer !== undefined) {
+                killer.score.kills += killedUpdate.killed === killer.publicId ? 0 : 1;
             }
-            updatesPerFrame[update.frameIndex].push(update);
-        });
-        let idx = frames.findIndex(frame => frame.frameIndex === sortedUpdates[0].frameIndex);
-        var len = frames.length;
-        idx = idx >= 1 ? idx : (idx === -1 ? frames.length : 1); // Frame not found -> frame in future
-        frames.splice(idx);
-        let objects = frames[idx - 1].objects;
-        const lastFrameIndex = frames[idx - 1].frameIndex;
-        /*console.log(frameIndex);
-        console.log(sortedUpdates);
-        console.log(objects);
-        console.log('replaying ' + (len - idx) + ' frames');*/
-        for (var i = lastFrameIndex + 1; i <= frameIndex; i++) {
-            objects = gameRules(objects, updatesPerFrame[i]);
-            frames.push({ objects, frameIndex: i });
-        }
-    } else {
-        frames.push({ objects: gameRules(state.objects), frameIndex });
-    }
-    state.updates = [];
-    if (frames.length >= framesToPersist) {
-        /*console.log('deleting' + (frames.length - framesToPersist + 1));
-        var a = frames.splice(0, frames.length - framesToPersist + 1);
-        console.log(a);*/
-        frames = frames.filter(frame => frame.frameIndex >= frameIndex - framesToPersist);
-    }
-    state.objects = deepCopy(frames[frames.length - 1].objects);
-    state.frameIndex = frameIndex;
+        })
+    );
+    state.updates = notifyUpdates.filter(update => !update.backwardsUpdate);
+
+    frames.update(gameRules(frames.current, state.updates));
+    state.objects = deepCopy(frames.current);
 }
 
 const deepCopy = o => JSON.parse(JSON.stringify(o));

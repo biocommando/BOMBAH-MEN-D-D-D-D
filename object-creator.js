@@ -1,9 +1,10 @@
 const consts = require('./game-constants');
+const idPool = require('./id-pool');
 
 module.exports = {
     create: (type, x, y, id) => createObject(type, x, y, id)
 };
-
+const nonPlayerIdPool = idPool.create();
 const createObject = (type, x, y, id) => {
     if (!Object.keys(consts.objectTypes).some(key => consts.objectTypes[key] === type)) {
         return;
@@ -19,6 +20,7 @@ const createObject = (type, x, y, id) => {
         object.id = id;
         object.reload = 0;
     } else {
+        object.id = nonPlayerIdPool.nextId();
         object.owner = id;
         if (type === consts.objectTypes.explosion) {
             object.radius = consts.explosionRadius;

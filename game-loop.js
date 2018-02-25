@@ -11,14 +11,17 @@ const startGameLoop = state => {
     setTimeout(() => expirePlayers(state), 0);
 };
 
-// Expire players and remove them from the objects array
-// NOTE! The player may remain active in the history for indefinite amount of time
-// so removing the player object from all historical frames may be required
+// Expire players and notify the game loop
 const expirePlayers = state => {
     const time = Date.now();
     state.players = state.players.filter(player => time < player.expires);
-    state.objects = state.objects.filter(object => object.type !== consts.objectTypes.player 
-        || state.players.some(player => player.globalId === object.id));
+    state.objects
+        .filter(object => object.type === consts.objectTypes.player &&
+            !state.players.some(player => player.publicId === object.id))
+        .forEach(expiredObject => state.updates.push({
+            type: consts.updateTypes.events.deleteObject,
+            id: expiredObject.id
+        }));
     setTimeout(() => expirePlayers(state), consts.expirePlayersInterval);
 };
 let lock = false;

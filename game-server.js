@@ -1,13 +1,17 @@
 /**
  *   API
  *   ---
- *   GET      /start
+ *   POST     /start
+ *       {name: string, oldSessionId: string}
  *       -> {id: string}
  *   POST     /update
- *            {type: string, frameIndex: number, uniqueId: string}
+ *            {type: string, frameIndex: number, sessionId: string}
  *       -> {}
  *   GET      /frame
  *       -> {objects: Array, frameIndex: number}
+ *   GET      /scores
+ *       -> [{publicId: number, name: string, score: {kills: number}}]
+ *
  *
  *   Error response:
  *   200    {error: string}
@@ -18,6 +22,7 @@ const connect = require('connect');
 const start = require('./game-starter.js');
 const updateFromUiHandler = require('./game-update-from-ui-handler');
 const gameLoop = require('./game-loop');
+const randomEvents = require('./random-events');
 
 const state = {
     // Inner list of players currently playing
@@ -25,8 +30,7 @@ const state = {
     // All game objects in existance, full state of the game
     // Safe to send to client
     objects: [],
-    updates: [],
-    frameIndex: 0
+    updates: []
 };
 
 const handleRequest = (url, method, data, res) => {
@@ -34,12 +38,22 @@ const handleRequest = (url, method, data, res) => {
     let result = { error: 'not found' };
     // console.log(data);
     if (eq('start')) {
-        result = start.start(state);
+        const body = JSON.parse(data);
+        console.log(body);
+        result = start.start(state, body.name, body.oldSessionId);
     } else if (eq('update')) {
         result = updateFromUiHandler.addUpdate(state, JSON.parse(data));
         // console.log(result);
     } else if (eq('frame')) {
-        result = {objects: state.objects, frameIndex: state.frameIndex};
+        result = {objects: state.objects};
+    } else if (eq('scores')) {
+        result = state.players.map(player => {
+            return {
+                publicId: player.publicId,
+                name: player.name,
+                score: player.score
+            }
+        });
     } else if (eq('state')) {
         // for debug purposes
         result = state;
@@ -59,3 +73,4 @@ connect()
     }).listen(3001);
 
 gameLoop.start(state);
+randomEvents.init(state);

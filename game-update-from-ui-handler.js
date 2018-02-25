@@ -5,7 +5,7 @@ module.exports = {
 }
 
 const update = (state, data) => {
-    const player = state.players.find(plr => plr.uniqueId === data.uniqueId);
+    const player = state.players.find(plr => plr.sessionId === data.sessionId);
     if (player === undefined) {
         return {error: 'unique player id not found'};
     }
@@ -28,8 +28,8 @@ const update = (state, data) => {
     }
     state.updates.push({
         type: data.type,
-        frameIndex: data.frameIndex,
-        playerId: player.globalId
+        order: data.order,
+        playerId: player.publicId
     });
     return {};
 };
