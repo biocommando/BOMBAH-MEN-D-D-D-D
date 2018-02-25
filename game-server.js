@@ -39,7 +39,6 @@ const handleRequest = (url, method, data, res) => {
     // console.log(data);
     if (eq('start')) {
         const body = JSON.parse(data);
-        console.log(body);
         result = start.start(state, body.name, body.oldSessionId);
     } else if (eq('update')) {
         result = updateFromUiHandler.addUpdate(state, JSON.parse(data));

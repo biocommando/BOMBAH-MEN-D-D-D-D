@@ -29,13 +29,13 @@ const gameRules = (objects, notifyUpdates, updates) => {
         };
 
         if (update.type === consts.updateTypes.events.createObject) {
-            console.log(update);
+            // console.log(update);
             const xy = update.xy ? update.xy : randomPosition();
             const object = objCreator.create(update.objectType, xy.x, xy.y, update.publicId);
             object.name = update.name;
             nextObjects.push(object);
         } else if (update.type === consts.updateTypes.events.deleteObject) {
-            console.log(update);
+            // console.log(update);
             nextObjects = nextObjects.filter(object => object.id !== update.id);
         } else {
             const playerObject = nextObjects.find(obj => obj.id === update.playerId);
@@ -154,7 +154,6 @@ const updateGame = (state) => {
     [state.updates, notifyUpdates].forEach(updates =>
         updates.filter(update => update.type === consts.updateTypes.events.playerKilled)
         .forEach(killedUpdate => {
-            console.log(killedUpdate);
             const killer = state.players.find(player => player.publicId === killedUpdate.killedBy);
             if (killer !== undefined) {
                 killer.score.kills += killedUpdate.killed === killer.publicId ? 0 : 1;
