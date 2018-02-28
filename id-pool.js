@@ -9,7 +9,7 @@ module.exports = {
     create: () => createPool()
 }
 let poolCounter = 0;
-createPool = () => {
+const createPool = () => {
     const poolId = ++poolCounter;
     let counter = 0;
     return {
