@@ -3,12 +3,19 @@ const gameStarter = require('./game-starter');
 const randomName = require('./random-name');
 
 module.exports = {
-    init: state => initRandomEvents(state)
+    init: (state, config) => initRandomEvents(state, config)
 }
 
-const initRandomEvents = state => {
-    // randomBombDrop(state, 2, 10000);
-    // botCreation(state, 5, 10000);
+const initRandomEvents = (state, config) => {
+    const bombConfig = config.randomBombs;
+    const botConfig = config.bots;
+
+    if (bombConfig && bombConfig.on) {
+        randomBombDrop(state, bombConfig.amount, bombConfig.delay);
+    }
+    if (botConfig && botConfig.on) {
+        botCreation(state, botConfig.playerLimit, botConfig.delay);
+    }
 };
 
 const randomBombDrop = (state, numBombs, delayMs) => {

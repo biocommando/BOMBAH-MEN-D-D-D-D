@@ -23,6 +23,10 @@ const start = require('./game-starter.js');
 const updateFromUiHandler = require('./game-update-from-ui-handler');
 const gameLoop = require('./game-loop');
 const randomEvents = require('./random-events');
+const configReader = require('./config');
+
+const config = configReader.read('config.ini');
+console.log(config);
 
 const state = {
     // Inner list of players currently playing
@@ -69,7 +73,7 @@ connect()
         let body = '';
         req.on('data', data => body += data);
         req.on('end', () => handleRequest(url, method, body, res));
-    }).listen(3001);
+    }).listen(config.port);
 
 gameLoop.start(state);
-randomEvents.init(state);
+randomEvents.init(state, config);

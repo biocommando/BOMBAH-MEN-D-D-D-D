@@ -1,0 +1,12 @@
+{
+ "name" : "bombah-men-d-d-d-d",
+ "version" : "0.0.1",
+ "main": "game-server.js",
+ "repository": "github:biocommando/BOMBAH-MEN-D-D-D-D",
+ "dependencies": {
+   "connect" : "3.6.6",
+   "serve-static" : "1.13.2"
+ },
+ "license": "MIT",
+ "author" : "Joonas Salonp‰‰ <joonas1000@gmail.com> (https://github.com/biocommando)"
+}
