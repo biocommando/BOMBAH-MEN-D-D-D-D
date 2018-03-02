@@ -25,7 +25,12 @@
         const redirect = () => {
             let name = document.getElementById('name').value;
             name = name.trim() ? '?name=' + name.trim() : '';
-            window.location.href = `./game.html${name}`;
+            const origin = window.location.origin;
+            let path = window.location.pathname;
+            if (path.lastIndexOf('/') !== path.length - 1) {
+                path = path + '/';
+            }
+            window.location.href = `${origin}${path}game.html${name}`;
         };
     </script>
 </body>
