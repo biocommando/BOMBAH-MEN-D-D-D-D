@@ -121,7 +121,7 @@ keyHandler.addKeyMapping('KeyR', {
 
 const joinGame = () => {
     const name = getQueryParam('name');
-    postJSON('/start',
+    postJSON('./start',
         { name, oldSessionId: sessionId },
         player => {
             sessionId = player.sessionId;
@@ -136,7 +136,7 @@ const joinGame = () => {
 };
 
 const updateScoreBoardLoop = () => {
-    getJSON('/scores', scores => {
+    getJSON('./scores', scores => {
         const text = scores.map(record => `${record.name}: ${record.score.kills}`).join(', ');
         document.getElementById('scores').innerText = `Scores: ${text}`;
     });
@@ -146,7 +146,7 @@ const updateScoreBoardLoop = () => {
 const sendUpdate = type => {
     expire = Date.now() + consts.playerExpireMillis * 0.7;
     updateCounter++;
-    postJSON('/update', { type, order: updateCounter, sessionId });
+    postJSON('./update', { type, order: updateCounter, sessionId });
 };
 
 let syncCounter = 1;
@@ -181,7 +181,7 @@ const gameLoop = () => {
     setTimeout(gameLoop, 30);
     keyHandler.handleKeyEvents();
     if (--syncCounter === 0) {
-        getJSON('/frame', syncFrame);
+        getJSON('./frame', syncFrame);
         if (Date.now() > expire) {
             sendUpdate(consts.updateTypes.session.heartbeat);
         }

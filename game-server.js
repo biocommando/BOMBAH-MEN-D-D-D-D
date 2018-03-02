@@ -61,18 +61,30 @@ const handleRequest = (url, method, data, res) => {
         // for debug purposes
         result = state;
     }
+    res.writeHead(200, { 'Content-Type': 'text/json' });
     res.end(JSON.stringify(result));
 };
+
+const handleRequestWithErrorHandling = (url, method, data, res) => {
+    try {
+        handleRequest(url, method, data, res);
+    } catch (error) {
+        console.log('Error while handling request (url, data, error): ', url,
+            data, error);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('internal server error');
+    }
+}
 
 connect()
     .use(serveStatic(__dirname))
     .use('/', (req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/json' });
         const url = req.url;
         const method = req.method;
         let body = '';
         req.on('data', data => body += data);
-        req.on('end', () => handleRequest(url, method, body, res));
+        req.on('end', () =>
+            handleRequestWithErrorHandling(url, method, body, res));
     }).listen(config.port);
 
 gameLoop.start(state);
