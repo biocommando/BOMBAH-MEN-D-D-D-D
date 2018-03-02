@@ -14,7 +14,12 @@ const startGameLoop = state => {
 // Expire players and notify the game loop
 const expirePlayers = state => {
     const time = Date.now();
+    const origNumPlayers = state.players.length;
     state.players = state.players.filter(player => time < player.expires);
+    if (origNumPlayers > state.players.length) {
+        console.log('Player(s) disconnected. Active players: ',
+        state.players);
+    }
     state.objects
         .filter(object => object.type === consts.objectTypes.player &&
             !state.players.some(player => player.publicId === object.id))

@@ -27,6 +27,7 @@ const startForNewPlayer = (state, name, oldSessionId) => {
         publicId: player.publicId,
         name
     });
+    console.log('Player joined: ', player);
     return player;
 };
 
